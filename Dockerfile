@@ -1,17 +1,23 @@
-# Используем официальный образ Go
-FROM golang:1.20
+FROM golang:1.23-alpine AS builder
 
-# Устанавливаем рабочую директорию
-WORKDIR /app
+RUN go version
 
-# Копируем файлы приложения
-COPY app/ .
+RUN go env -w GOPRIVATE=github.com/ereshzealous
 
-# Устанавливаем зависимости
+COPY . /github.com/ferestgo/go-app/
+WORKDIR /github.com/ferestgo/go-app/
+
 RUN go mod tidy
+# RUN export token=${token}
+RUN GOOS=linux go build -o ./.bin/app ./app/main.go
 
-# Компилируем приложение
-RUN go build -o main .
 
-# Указываем команду запуска
-CMD ["./main"]
+FROM alpine:latest
+
+WORKDIR /root/
+
+COPY --from=0 /github.com/ferestgo/go-app/.bin/app .
+
+EXPOSE 80
+
+CMD ["./app"]
